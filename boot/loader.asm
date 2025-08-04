@@ -1,6 +1,12 @@
 LOADER_START_ADDRESS equ 0x900
+KERNEL_START_ADDRESS equ 0x100000
+KERNEL_START_SECTOR equ 10
+KERNEL_SECTOR_CNT equ 50
+SECTOR_SIZE equ 256 ; 一次加载两个字节
+
 PHY_MEM_SIZE equ 0x800
 PAGE_BASE equ 0x90000
+
 
 
 section .text vstart=LOADER_START_ADDRESS
@@ -8,7 +14,7 @@ section .text vstart=LOADER_START_ADDRESS
 
     StartLoader: db 'Start Loader'
     MSG_Get_Mem_OK: db 'Get Mem OK'
-    MSG_Get_Mem_Fail: db 'Get Mem Fail'
+    MSG_Get_Mem_Fail: db 'Get Mem Fail'                    
 
     GDT_BASE:
         dq	0x0000000000000000
@@ -76,6 +82,12 @@ loader_start:
             mov bp , MSG_Get_Mem_OK
             int 0x10
 
+    ; 设置分辨率
+    mov	ax,	4F02h
+	mov	bx,	4180h	
+	int 	10h
+
+
 ; 进入保护模式
     ; 打开A20
         in al, 0x92
@@ -101,6 +113,64 @@ mov ds , ax
 mov es , ax
 mov ss , ax
 mov esp , LOADER_START_ADDRESS
+
+; 加载内核
+    mov eax , KERNEL_START_SECTOR
+    mov ebx , KERNEL_START_ADDRESS
+    mov cx , KERNEL_SECTOR_CNT
+
+    mov esi , eax
+    ; 设置扇区数
+    mov dx , 0x1f2
+    mov al , cl
+    out dx , al
+
+    mov eax , esi
+
+    ; 设置逻辑块号 低24位
+    mov dx , 0x1f3
+    out dx , al
+
+    mov dx , 0x1f4
+    shr eax , 8
+    out dx , al
+
+    mov dx , 0x1f5
+    shr eax , 8
+    out dx , al
+
+    ; 设置device
+    mov dx , 0x1f6
+    shr eax , 8
+    and  al , 0x0F
+    or al , 0xE0
+    out dx , al
+
+    ; 写入命令
+    mov dx , 0x1f7
+    mov al , 0x20
+    out dx , al
+
+    ; 检测状态
+    .is_ready:
+        nop
+        in al , dx
+        and  al , 0x88
+        cmp al , 0x08
+        jnz .is_ready
+
+    ; 读取数据
+    mov ax , SECTOR_SIZE
+    mul cx
+    mov cx , ax
+
+    ; 载入内存
+    .load_to_mem:
+        mov dx , 0x1f0
+        in ax , dx
+        mov [ebx] , ax
+        add ebx , 2
+        loop .load_to_mem
 
 
 ; 进入IA-32e模式
@@ -142,7 +212,7 @@ mov	cr0,	eax
 
 
 
-jmp $
+jmp SELECTOR_CODE:KERNEL_START_ADDRESS
 
 
 
