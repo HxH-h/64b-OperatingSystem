@@ -82,7 +82,13 @@ loader_start:
             mov bp , MSG_Get_Mem_OK
             int 0x10
 
-    ; 设置分辨率
+    ; 获取ModeInfoBlock
+    mov ax , 0x4F01
+    mov cx , 0x180
+    mov di , 0x8200
+    int 0x10
+
+    ; 设置分辨率   1440*900
     mov	ax,	4F02h
 	mov	bx,	4180h	
 	int 	10h
@@ -184,6 +190,14 @@ mov esp , LOADER_START_ADDRESS
     mov	dword	[PAGE_BASE + 0x1000], (PAGE_BASE + 0x2000)|7
     ; 页表
     mov	dword	[PAGE_BASE + 0x2000], 0x000083
+    mov	dword	[PAGE_BASE + 0x2000 + 8 * 1],	0x200083
+	mov	dword	[PAGE_BASE + 0x2000 + 8 * 2],	0x400083
+	mov	dword	[PAGE_BASE + 0x2000 + 8 * 3],	0x600083
+	mov	dword	[PAGE_BASE + 0x2000 + 8 * 4],	0x800083
+
+    mov	dword	[PAGE_BASE + 0x2000 + 8 * 5],	0xe0000083
+    mov	dword	[PAGE_BASE + 0x2000 + 8 * 6],	0xe0200083
+    mov	dword	[PAGE_BASE + 0x2000 + 8 * 7],	0xe0400083
 
 ; 重新加载GDT
 lgdt [GDT_64_PTR]
