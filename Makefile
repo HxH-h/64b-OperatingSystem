@@ -9,7 +9,7 @@ all: $(OUTPUT_DIR)/system
 clean:
 	rm -rf $(OUTPUT_DIR)/*
 
-$(OUTPUT_DIR)/system: $(OUTPUT_DIR)/main.o $(OUTPUT_DIR)/console.o $(OUTPUT_DIR)/string.o
+$(OUTPUT_DIR)/system: $(OUTPUT_DIR)/main.o $(OUTPUT_DIR)/console.o $(OUTPUT_DIR)/string.o $(OUTPUT_DIR)/memory.o
 	ld -b elf64-x86-64 -z muldefs -T kernel.lds -Map $(OUTPUT_DIR)/kernel.map $^ -o $@
 
 
@@ -18,6 +18,9 @@ $(OUTPUT_DIR)/main.o : kernel/main.c
 	gcc $(CFLAGS) -c $< -o $@
 
 $(OUTPUT_DIR)/console.o : kernel/console/console.c
+	gcc $(CFLAGS) -c $< -o $@
+
+$(OUTPUT_DIR)/memory.o : kernel/memory/memory.c
 	gcc $(CFLAGS) -c $< -o $@
 
 $(OUTPUT_DIR)/string.o : kernel/lib/string.c
