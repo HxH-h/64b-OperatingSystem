@@ -21,3 +21,4 @@
 
 void init_console(uint32_t bg_color);
 void put_char_color(char ch , uint32_t fg_color);
+void print_color(const char *format , uint32_t fg_color , ...);
