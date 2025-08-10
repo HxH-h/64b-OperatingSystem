@@ -126,8 +126,8 @@ int vsprintf(char *buffer, const char *format, va_list args) {
                 }
                 case 'x':
                 case 'X': {
-                    unsigned int num = va_arg(args, unsigned int);
-                    char num_str[12]; // 足够容纳32位无符号整数的十六进制表示
+                    uint64_t num = va_arg(args, uint64_t);
+                    char num_str[17]; // 足够容纳64位无符号整数的十六进制表示
                     int len = 0;
                     int is_upper = (format[i] == 'X');
                     
