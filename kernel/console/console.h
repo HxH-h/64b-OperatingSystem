@@ -18,7 +18,11 @@
 #define COLOR_BLUE        0x0000FF  // 蓝色
 #define COLOR_YELLOW      0xFFFF00  // 黄色
 
+typedef enum{
+    LIGHT,DARK
+} Appearance;
 
-void init_console(uint32_t bg_color);
+void init_console(Appearance appear);
 void put_char_color(char ch , uint32_t fg_color);
-void print_color(const char *format , uint32_t fg_color , ...);
+void print_color(uint32_t fg_color , const char *format , ...);
+void print(const char *format , ...);

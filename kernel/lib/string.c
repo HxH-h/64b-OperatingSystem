@@ -124,6 +124,38 @@ int vsprintf(char *buffer, const char *format, va_list args) {
                     }
                     break;
                 }
+                case 'x':
+                case 'X': {
+                    unsigned int num = va_arg(args, unsigned int);
+                    char num_str[12]; // 足够容纳32位无符号整数的十六进制表示
+                    int len = 0;
+                    int is_upper = (format[i] == 'X');
+                    
+                    // 处理0的特殊情况
+                    if (num == 0) {
+                        *str++ = '0';
+                        written++;
+                        break;
+                    }
+                    
+                    // 转换为十六进制
+                    while (num != 0) {
+                        int rem = num % 16;
+                        if (rem < 10) {
+                            num_str[len++] = rem + '0';
+                        } else {
+                            num_str[len++] = (is_upper ? 'A' : 'a') + (rem - 10);
+                        }
+                        num = num / 16;
+                    }
+                    
+                    // 反转字符串
+                    for (int j = len - 1; j >= 0; j--) {
+                        *str++ = num_str[j];
+                        written++;
+                    }
+                    break;
+                }
                 default:
                     *str++ = format[i];
                     written++;
