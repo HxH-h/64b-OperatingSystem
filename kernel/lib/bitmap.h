@@ -1,7 +1,7 @@
 # ifndef __LIB_BITMAP_H__
 # define __LIB_BITMAP_H__ 
 
-# include "stdint.h"
+# include "../lib/stdtype.h"
 
 # define EMPTY 0
 

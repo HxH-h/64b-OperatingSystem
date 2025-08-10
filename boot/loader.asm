@@ -1,4 +1,5 @@
 LOADER_START_ADDRESS equ 0x900
+KERNEL_STACK equ 0x7e00
 KERNEL_START_ADDRESS equ 0x100000
 KERNEL_START_SECTOR equ 10
 KERNEL_SECTOR_CNT equ 50
@@ -118,7 +119,7 @@ mov ax , SELECTOR_DATA
 mov ds , ax
 mov es , ax
 mov ss , ax
-mov esp , LOADER_START_ADDRESS
+mov esp , KERNEL_STACK
 
 ; 加载内核
     mov eax , KERNEL_START_SECTOR
@@ -185,6 +186,7 @@ mov esp , LOADER_START_ADDRESS
     ; 全局页表
     mov	dword	[PAGE_BASE],	(PAGE_BASE + 0x1000)|7
 	mov	dword	[PAGE_BASE + 0x800],   (PAGE_BASE + 0x1000)|7
+    mov dword   [PAGE_BASE + 8 * 511] , (PAGE_BASE)|7
 
     ; 上级页表
     mov	dword	[PAGE_BASE + 0x1000], (PAGE_BASE + 0x2000)|7
