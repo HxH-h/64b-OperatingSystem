@@ -87,6 +87,16 @@ void init_memory(){
 
 }
 
+void memset(void *_dst , uint8_t value, uint32_t size){
+    uint8_t* dst = _dst;
+    while (size--) *(dst++) = value;
+}
+void memcpy(void *_dst , void *_src, uint32_t size){
+    uint8_t *src = _src;
+    uint8_t *dst = _dst;
+    while (size--) *(dst++) = *(src++);
+}
+
 
 
 

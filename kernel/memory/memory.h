@@ -14,4 +14,18 @@
 # define BITMAP_4K_ADDR 0x8000
 
 
+# define PML4_MASK (0xfffffffffffff000)
+# define PDPT_MASK (0xffffffffffe00000)
+# define PDE_MASK (0xffffffffc0000000)
+# define PDE_ITEM_MASK (0x000FFFFFFFFFE00000)
+
+
+#define GET_PML4E(vAddr) ((uint64_t *)(((vAddr >> 39) << 3) | PML4_MASK))
+#define GET_PDPTE(vAddr) ((uint64_t *)(((vAddr >> 30) << 3) | PDPT_MASK))
+#define GET_PDE(vAddr)   ((uint64_t *)(((vAddr >> 21) << 3) | PDE_MASK))
+
+#define V2P_2MB(vAddr) \
+    ( ((uint64_t)(*GET_PDE(vAddr)) & PDE_ADDR_MASK_2MB) | (vAddr & PAGE_MASK )
+
+
 void init_memory();
