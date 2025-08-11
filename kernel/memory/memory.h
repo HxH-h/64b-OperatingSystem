@@ -6,6 +6,14 @@
 # define PAGE_SHIFT_4K 12
 # define PAGE_MASK (PAGE_SIZE - 1)
 
+# define PG_EXIST 0x1
+
+# define PG_RW (0x1 << 1)
+# define PG_R (0x0 << 1)
+
+# define PG_USER (0x1 << 2)
+# define PG_CORE (0x0 << 2)
+
 // 向上对齐
 #define ALIGN_UP_2MB(addr) \
     ( ( (uint64_t)(addr) + PAGE_MASK ) & ~PAGE_MASK )

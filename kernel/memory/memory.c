@@ -14,9 +14,13 @@ typedef struct {
     Bitmap bitmap;
     uint64_t pool_size;
     uint64_t addr_start;
-} pool;
+} Pool;
 
-pool pool_4k , pool_user_2m , pool_core_2m;
+typedef enum{
+    MEM_4K, USER_2M, KERNEL_2M 
+} Pool_type;
+
+Pool pool_4k , pool_user_2m , pool_core_2m;
 
 // 内核结束地址
 extern char _end;
@@ -97,7 +101,65 @@ void memcpy(void *_dst , void *_src, uint32_t size){
     while (size--) *(dst++) = *(src++);
 }
 
+// bitmap 分配
+uint64_t bitmap_alloc(Bitmap* bitmap , uint32_t count){
+
+    int index = bitmap_scan(bitmap, count);
+
+    if(index == -1) return NULL;
+    // 设置已分配
+    bitmap_set(bitmap, index, count);
+
+    return index;
+}
+
+// 分配物理页
+// 一次只分配一页
+// 返回物理地址
+void* palloc(Pool_type type){
+    Pool* pool = NULL;
+    uint32_t p_size = PAGE_SIZE;
+
+    if(type == MEM_4K){
+        pool = &pool_4k;
+        p_size = PAGE_SIZE_4K;
+    }else if(type == USER_2M) pool = &pool_user_2m;
+    else if(type == KERNEL_2M) pool = &pool_core_2m;
+    else return NULL;
+
+    uint64_t idx = bitmap_alloc(&pool->bitmap, 1);
+
+    return (void*)(pool->addr_start + idx * p_size);
+}
+
+// 分配虚拟页
+// 返回虚拟地址
+void* valloc(Pool_type type , uint32_t pg_cnt){
+    // TODO 实现分配虚拟地址
+}
 
 
+bool page_table_add(void* _vaddr, void* _paddr){
+
+    uint64_t* pml4e = GET_PML4E((uint64_t)_vaddr);
+    uint64_t* pdpte = GET_PDPTE((uint64_t)_vaddr);
+    uint64_t* pde = GET_PDE((uint64_t)_vaddr);
+
+    // 检查各级页表项是否存在
+    if(!(*pml4e & PG_EXIST)){
+        uint64_t addr = (uint64_t)palloc(MEM_4K);
+        *pml4e = addr | PG_USER | PG_RW | PG_EXIST;
+        //memset((void *)((uint64_t)addr & 0xfffffffffffff000), 0, PAGE_SIZE_4K);
+    }
+    if(!(*pdpte & PG_EXIST)){
+        uint64_t addr = (uint64_t)palloc(MEM_4K);
+        *pdpte = addr | PG_USER | PG_RW | PG_EXIST;
+        //memset((void *)((uint64_t)addr & 0xfffffffffffff000), 0, PAGE_SIZE_4K);
+    }
+
+    *pde = (uint64_t)_paddr | PG_USER | PG_RW | PG_EXIST;
+    
+    return true;
+}
 
 
