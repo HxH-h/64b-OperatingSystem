@@ -70,7 +70,7 @@ int bitmap_scan(const Bitmap* bmp, uint32_t cnt) {
             } else zero_count = 0;
         }
     }
-
+    
     return -1; // 未找到
 
 }

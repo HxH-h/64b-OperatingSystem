@@ -33,7 +33,7 @@
 #define GET_PDE(vAddr)   ((uint64_t *)(((vAddr >> 21) << 3) | PDE_MASK))
 
 #define V2P_2MB(vAddr) \
-    ( ((uint64_t)(*GET_PDE(vAddr)) & PDE_ADDR_MASK_2MB) | (vAddr & PAGE_MASK )
+    ( ((uint64_t)(*GET_PDE(vAddr)) & PDE_ITEM_MASK) | (vAddr & PAGE_MASK) )
 
 
 void init_memory();
