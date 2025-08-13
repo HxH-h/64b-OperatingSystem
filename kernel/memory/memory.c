@@ -16,9 +16,7 @@ typedef struct {
     uint64_t addr_start;
 } Pool;
 
-typedef enum{
-    MEM_4K, USER_2M, KERNEL_2M 
-} Pool_type;
+
 
 // 内核结束地址
 extern char _end;

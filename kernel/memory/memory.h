@@ -35,5 +35,11 @@
 #define V2P_2MB(vAddr) \
     ( ((uint64_t)(*GET_PDE(vAddr)) & PDE_ITEM_MASK) | (vAddr & PAGE_MASK) )
 
+typedef enum{
+    MEM_4K, USER_2M, KERNEL_2M 
+} Pool_type;
+
 
 void init_memory();
+void* page_alloc(Pool_type type, uint32_t pg_cnt);
+bool page_free(Pool_type type, void* _vaddr, uint32_t pg_cnt);
