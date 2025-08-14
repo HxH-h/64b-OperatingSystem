@@ -3,12 +3,15 @@
 
 #define ALIGN_ADDR_UP(address, size) \
     (((uint64_t)(address) + (size) - 1) & ~((size) - 1))
-# define SLAB_MASK (0xffffffffffe00000)
+
 # define GET_SLAB_ITEM(address, size) \
     ((uint64_t)(address) & ~((size) - 1))
 
+// 创建slab
 Slab * slab_create(Pool_type type , uint32_t slab_size){
     Slab *slab = (Slab*)page_alloc(type, 1);
+
+    slab->slab_size = slab_size;
 
     uint64_t slab_end = (uint64_t)slab + sizeof(Slab);
 
@@ -17,6 +20,8 @@ Slab * slab_create(Pool_type type , uint32_t slab_size){
 
     slab->total = ((uint64_t)slab->vaddr_end - (uint64_t)slab->vaddr_start) / slab_size;
     slab->total_free = slab->total;
+
+    slab->magic = SLAB_MAGIC;
 
     list_init(&slab->free_list);
 
@@ -50,10 +55,11 @@ void slab_init(Slab_cache* cache , uint32_t slab_size , slab_callback constructo
 
 }
 
-void * slab_alloc(Slab_cache* cache){
+// 分配slab
+void * slab_alloc(Pool_type type , Slab_cache* cache){
 
     if (list_empty(&cache->slab_list)){
-        Slab *slab = slab_create(KERNEL_2M, cache->slab_size);
+        Slab *slab = slab_create(type, cache->slab_size);
         list_push(&cache->slab_list, &slab->node);
         cache->total += slab->total;
         cache->total_free += slab->total_free;
@@ -66,6 +72,8 @@ void * slab_alloc(Slab_cache* cache){
     Node *item = list_pop(&slab->free_list);
     void *addr = GET_SLAB_ITEM(item, cache->slab_size);
 
+    memset(addr, 0, cache->slab_size);
+
     cache->total_free--;
     slab->total_free--;
 
@@ -74,6 +82,27 @@ void * slab_alloc(Slab_cache* cache){
 
     return addr;
 
+}
+
+// slab 块释放
+void slab_free(Pool_type type , Slab_cache* cache, void* _addr){
+
+    Slab *slab = (Slab *)((uint64_t)_addr & SLAB_MASK);
+    Node *node = (Node *)GET_SLAB_ITEM((uint64_t)_addr, slab->slab_size);
+
+    list_push(&slab->free_list, node);
+
+    slab->total_free++;
+    cache->total_free++;
+
+    if(slab->total_free == 1) list_push(&cache->slab_list, &slab->node);
+    else if (slab->total_free == slab->total){
+        list_remove(&slab->node);
+        page_free(type, slab, 1);
+
+        cache->total_free -= slab->total;
+    }
+    
 }
 
 

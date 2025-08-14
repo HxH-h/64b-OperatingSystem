@@ -24,7 +24,7 @@ void insert_before(Node *before , Node *node){
 // 删除指定节点
 void list_remove(Node *node){
     //intr_status old = get_intr_status();
-    disable_intr();
+    //disable_intr();
 
     node->prev->next = node->next;
     node->next->prev = node->prev;

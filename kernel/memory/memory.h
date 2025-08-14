@@ -6,6 +6,9 @@
 # define PAGE_SHIFT_4K 12
 # define PAGE_MASK (PAGE_SIZE - 1)
 
+# define SLAB_CACHE_SIZE 16
+# define SLAB_START 32
+
 # define PG_EXIST 0x1
 
 # define PG_RW (0x1 << 1)
@@ -41,5 +44,9 @@ typedef enum{
 
 
 void init_memory();
+
+void memset(void *_dst , uint8_t value, uint32_t size);
+void memcpy(void *_dst , void *_src, uint32_t size);
+
 void* page_alloc(Pool_type type, uint32_t pg_cnt);
 bool page_free(Pool_type type, void* _vaddr, uint32_t pg_cnt);

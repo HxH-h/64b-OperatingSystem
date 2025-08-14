@@ -1,7 +1,9 @@
 # include "memory.h"
+# include "../global.h"
 # include "../console/console.h"
 # include "../lib/stdtype.h"
 # include "../lib/bitmap.h"
+# include "./slab.h"
 
 // 取消结构体对齐
 typedef struct __attribute__((packed)){
@@ -25,6 +27,10 @@ Pool pool_4k , pool_user_2m , pool_core_2m;
 
 // 内核虚拟内存池
 Pool pool_virt;
+
+// slab 内存池
+Slab_cache slab_cache[ SLAB_CACHE_SIZE ];
+uint32_t MAX_SLAB_SIZE = SLAB_START;
 
 
 void init_memory(){
@@ -101,6 +107,15 @@ void init_memory(){
     pool_virt.addr_start = ALIGN_UP_2MB(end);
 
     print("Kernel Virt pool: size %x, start %x\n", pool_virt.pool_size, pool_virt.addr_start);
+
+
+    // 初始化slab内存池
+    uint8_t i = 0;
+    for (i = 0; i < SLAB_CACHE_SIZE; i++){
+        slab_init(&slab_cache[i], MAX_SLAB_SIZE , NULL, NULL);
+        MAX_SLAB_SIZE *= 2;
+    }
+    MAX_SLAB_SIZE /= 2;
 }
 
 void memset(void *_dst , uint8_t value, uint32_t size){
@@ -220,6 +235,9 @@ bool page_table_add(void* _vaddr, void* _paddr){
 bool page_table_remove(void* vaddr){ 
     uint64_t* pde = GET_PDE((uint64_t)vaddr);
     *pde &= ~PG_EXIST;
+
+    // TODO 释放页表项所对应的页表
+
     asm volatile("invlpg %0"::"m"(vaddr):"memory");
 }
 
@@ -243,7 +261,6 @@ void* page_alloc(Pool_type type, uint32_t pg_cnt){
         vaddr_start += PAGE_SIZE;
     }
 
-
     return vaddr;
 }
 
@@ -262,6 +279,55 @@ bool page_free(Pool_type type, void* _vaddr, uint32_t pg_cnt){
         vaddr += PAGE_SIZE;
     }
     return true;
+}
+
+
+
+// 块级分配
+void* kmalloc(uint32_t size){ 
+
+    if(size > PAGE_SIZE) return NULL;
+
+    void* addr = NULL;
+
+    // TODO 实现用户态内存分配
+    Pool_type type = KERNEL_2M;
+
+    if(size > MAX_SLAB_SIZE){
+        uint32_t page_cnt = DIV_ROUND_UP(size, PAGE_SIZE);
+        
+        addr = page_alloc(type, page_cnt);
+
+        if (addr != NULL) memset(addr, 0, page_cnt * PAGE_SIZE);
+    }else{
+        uint8_t i = 0;
+        for(; i < SLAB_CACHE_SIZE ; i++){
+            if(slab_cache[i].slab_size >= size) break;
+        }
+    
+        addr = slab_alloc(type , &slab_cache[i]);
+    }
+
+    return addr;
+
+}
+
+// 块级释放
+void kfree(void* _vaddr){
+
+    // TODO 实现用户态内存分配
+
+    Pool_type type = KERNEL_2M;
+
+    Slab *slab = (Slab *)((uint64_t)_vaddr & SLAB_MASK);
+
+    if(slab->magic == SLAB_MAGIC){
+        uint32_t start = __builtin_ctz(SLAB_START);
+        uint32_t idx = __builtin_ctz(slab->slab_size) - start;
+        slab_free(type , &slab_cache[idx] , _vaddr);
+
+    }else page_free(type , _vaddr , 1);
+    
 }
 
 
