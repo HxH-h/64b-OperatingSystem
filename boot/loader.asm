@@ -2,7 +2,7 @@ LOADER_START_ADDRESS equ 0x900
 KERNEL_STACK equ 0x7e00
 KERNEL_START_ADDRESS equ 0x100000
 KERNEL_START_SECTOR equ 10
-KERNEL_SECTOR_CNT equ 50
+KERNEL_SECTOR_CNT equ 100
 SECTOR_SIZE equ 256 ; 一次加载两个字节
 
 PHY_MEM_SIZE equ 0x800
@@ -197,9 +197,18 @@ mov esp , KERNEL_STACK
 	mov	dword	[PAGE_BASE + 0x2000 + 8 * 3],	0x600083
 	mov	dword	[PAGE_BASE + 0x2000 + 8 * 4],	0x800083
 
-    mov	dword	[PAGE_BASE + 0x2000 + 8 * 5],	0xe0000083
-    mov	dword	[PAGE_BASE + 0x2000 + 8 * 6],	0xe0200083
-    mov	dword	[PAGE_BASE + 0x2000 + 8 * 7],	0xe0400083
+    ; mov	dword	[PAGE_BASE + 0x2000 + 8 * 5],	0xe0000083
+    ; mov	dword	[PAGE_BASE + 0x2000 + 8 * 6],	0xe0200083
+    ; mov	dword	[PAGE_BASE + 0x2000 + 8 * 7],	0xe0400083
+
+    ; 系统区映射 , 显存，中断，DMA
+    mov dword   [PAGE_BASE + 8 * 510] , (PAGE_BASE + 0x3000)|7
+    ; PDPT
+    mov dword   [PAGE_BASE + 0x3000] , (PAGE_BASE + 0x4000)|7
+    ; PDE
+    mov dword   [PAGE_BASE + 0x4000] , 0xe0000083
+    mov dword   [PAGE_BASE + 0x4000 + 8 * 1] , 0xe0200083
+    mov dword   [PAGE_BASE + 0x4000 + 8 * 2] , 0xe0400083
 
 ; 重新加载GDT
 lgdt [GDT_64_PTR]
