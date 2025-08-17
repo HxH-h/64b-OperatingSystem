@@ -1,13 +1,14 @@
 # include "./console/console.h"
-
-
+# include "./memory/memory.h"
 
 void init();
 
 int main(){
 	init();
-    print_color("Hello %s World!\n %d",COLOR_GREEN , "HXH" , 123);
-	
+    print("Hello OS!\n");
+    
+
+    
     while (1){
         
     }
@@ -17,5 +18,6 @@ int main(){
 
 
 void init(){
-	init_console(COLOR_WHITE);
+	init_console(DARK);
+    init_memory();
 }

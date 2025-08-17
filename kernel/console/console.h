@@ -2,7 +2,7 @@
 
 # include "../lib/stdtype.h"
 
-# define SCREEN_BUFFER ((uint32_t *)0xffff800000a00000);
+# define SCREEN_BUFFER ((uint32_t *)0xFFFFFF0000000000);
 
 # define WIDTH 1440
 # define HEIGHT 900

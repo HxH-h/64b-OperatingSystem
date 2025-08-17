@@ -9,7 +9,9 @@ all: $(OUTPUT_DIR)/system
 clean:
 	rm -rf $(OUTPUT_DIR)/*
 
-$(OUTPUT_DIR)/system: $(OUTPUT_DIR)/main.o $(OUTPUT_DIR)/console.o $(OUTPUT_DIR)/string.o $(OUTPUT_DIR)/memory.o
+$(OUTPUT_DIR)/system: $(OUTPUT_DIR)/main.o $(OUTPUT_DIR)/console.o \
+					 $(OUTPUT_DIR)/memory.o	$(OUTPUT_DIR)/slab.o \
+					$(OUTPUT_DIR)/string.o $(OUTPUT_DIR)/bitmap.o $(OUTPUT_DIR)/linkedlist.o
 	ld -b elf64-x86-64 -z muldefs -T kernel.lds -Map $(OUTPUT_DIR)/kernel.map $^ -o $@
 
 
@@ -23,6 +25,13 @@ $(OUTPUT_DIR)/console.o : kernel/console/console.c
 $(OUTPUT_DIR)/memory.o : kernel/memory/memory.c
 	gcc $(CFLAGS) -c $< -o $@
 
+$(OUTPUT_DIR)/slab.o : kernel/memory/slab.c
+	gcc $(CFLAGS) -c $< -o $@
+
 $(OUTPUT_DIR)/string.o : kernel/lib/string.c
+	gcc $(CFLAGS) -c $< -o $@
+$(OUTPUT_DIR)/bitmap.o : kernel/lib/bitmap.c
+	gcc $(CFLAGS) -c $< -o $@
+$(OUTPUT_DIR)/linkedlist.o : kernel/lib/linkedlist.c
 	gcc $(CFLAGS) -c $< -o $@
 

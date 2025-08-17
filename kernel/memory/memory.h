@@ -1,5 +1,7 @@
 # pragma once
 
+# include "../lib/stdtype.h"
+
 # define PAGE_SIZE 0x200000
 # define PAGE_SHIFT 21
 # define PAGE_SIZE_4K 0x1000
@@ -16,6 +18,8 @@
 
 # define PG_USER (0x1 << 2)
 # define PG_CORE (0x0 << 2)
+
+# define PG_2MB_BASE (0x1 << 7)
 
 // 向上对齐
 #define ALIGN_UP_2MB(addr) \
@@ -50,3 +54,6 @@ void memcpy(void *_dst , void *_src, uint32_t size);
 
 void* page_alloc(Pool_type type, uint32_t pg_cnt);
 bool page_free(Pool_type type, void* _vaddr, uint32_t pg_cnt);
+
+void* kmalloc(uint32_t size);
+void kfree(void* _vaddr);

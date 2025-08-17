@@ -100,6 +100,7 @@ void init_memory(){
 
 
     // 初始化虚拟内存池
+    end = (uint64_t)&_end;
     uint64_t bitmap_virt = bitmap_kernel + bitmap_size_kernel;
     bitmap_init(&pool_virt.bitmap, (uint8_t*)bitmap_virt, bitmap_size_kernel);
 
@@ -116,6 +117,7 @@ void init_memory(){
         MAX_SLAB_SIZE *= 2;
     }
     MAX_SLAB_SIZE /= 2;
+    print("memory init done\n");
 }
 
 void memset(void *_dst , uint8_t value, uint32_t size){
@@ -214,7 +216,7 @@ bool page_table_add(void* _vaddr, void* _paddr){
     uint64_t* pml4e = GET_PML4E((uint64_t)_vaddr);
     uint64_t* pdpte = GET_PDPTE((uint64_t)_vaddr);
     uint64_t* pde = GET_PDE((uint64_t)_vaddr);
-
+    
     // 检查各级页表项是否存在
     if(!(*pml4e & PG_EXIST)){
         uint64_t addr = (uint64_t)palloc(MEM_4K);
@@ -227,18 +229,18 @@ bool page_table_add(void* _vaddr, void* _paddr){
         memset((void *)((uint64_t)pde & 0xfffffffffffff000), 0, PAGE_SIZE_4K);
     }
 
-    *pde = (uint64_t)_paddr | PG_USER | PG_RW | PG_EXIST;
+    *pde = (uint64_t)_paddr | PG_2MB_BASE | PG_USER | PG_RW | PG_EXIST;
     
     return true;
 }
 
 bool page_table_remove(void* vaddr){ 
     uint64_t* pde = GET_PDE((uint64_t)vaddr);
+    
     *pde &= ~PG_EXIST;
 
-    // TODO 释放页表项所对应的页表
-
     asm volatile("invlpg %0"::"m"(vaddr):"memory");
+    return true;
 }
 
 // 分配页
@@ -257,7 +259,11 @@ void* page_alloc(Pool_type type, uint32_t pg_cnt){
             print("page_alloc: palloc failed\n");
             return NULL;
         }
-        page_table_add((void*)vaddr_start, paddr);
+        bool res = page_table_add((void*)vaddr_start, paddr);
+        if(!res){
+            print("page_alloc: page_table_add failed\n");
+            return NULL;
+        }
         vaddr_start += PAGE_SIZE;
     }
 
@@ -269,13 +275,17 @@ bool page_free(Pool_type type, void* _vaddr, uint32_t pg_cnt){
 
     uint64_t vaddr = (uint64_t)_vaddr;
     vfree(type, _vaddr, pg_cnt);
-
+   
     while(pg_cnt--){
         uint64_t paddr = V2P_2MB(vaddr);
+       
         pfree(type, (void*)paddr);
 
-        page_table_remove((void*)vaddr);
-
+        bool res = page_table_remove((void*)vaddr);
+        if(!res){
+            print("page_free error");
+            return false;
+        }
         vaddr += PAGE_SIZE;
     }
     return true;
@@ -324,7 +334,9 @@ void kfree(void* _vaddr){
     if(slab->magic == SLAB_MAGIC){
         uint32_t start = __builtin_ctz(SLAB_START);
         uint32_t idx = __builtin_ctz(slab->slab_size) - start;
+        
         slab_free(type , &slab_cache[idx] , _vaddr);
+        
 
     }else page_free(type , _vaddr , 1);
     

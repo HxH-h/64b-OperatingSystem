@@ -2,20 +2,21 @@
 # include "memory.h"
 
 #define ALIGN_ADDR_UP(address, size) \
-    (((uint64_t)(address) + (size) - 1) & ~((size) - 1))
+    (((uint64_t)(address) + (uint64_t)(size) - 1) & ~((uint64_t)(size) - 1))
 
 # define GET_SLAB_ITEM(address, size) \
-    ((uint64_t)(address) & ~((size) - 1))
+    ((uint64_t)(address) & ~((uint64_t)(size) - 1))
 
 // 创建slab
 Slab * slab_create(Pool_type type , uint32_t slab_size){
     Slab *slab = (Slab*)page_alloc(type, 1);
-
+    
     slab->slab_size = slab_size;
-
+    
     uint64_t slab_end = (uint64_t)slab + sizeof(Slab);
-
+    
     slab->vaddr_start = (void *)(ALIGN_ADDR_UP(slab_end, slab_size));
+    
     slab->vaddr_end = (void *)((uint64_t)slab + PAGE_SIZE);
 
     slab->total = ((uint64_t)slab->vaddr_end - (uint64_t)slab->vaddr_start) / slab_size;
@@ -30,7 +31,7 @@ Slab * slab_create(Pool_type type , uint32_t slab_size){
         Node *slab_item = (Node *)((uint64_t)slab->vaddr_start + i * slab_size);
         list_append(&slab->free_list, slab_item);
     }
-
+    
     return slab;
 }
 
@@ -42,11 +43,13 @@ void slab_init(Slab_cache* cache , uint32_t slab_size , slab_callback constructo
 
     list_init(&cache->slab_list);
 
+
     // TODO 实现用户态的分配
 
     Pool_type type = KERNEL_2M;
 
     Slab *slab = slab_create(type, slab_size);
+
 
     list_push(&cache->slab_list, &slab->node);
 
@@ -94,13 +97,17 @@ void slab_free(Pool_type type , Slab_cache* cache, void* _addr){
 
     slab->total_free++;
     cache->total_free++;
-
+    
     if(slab->total_free == 1) list_push(&cache->slab_list, &slab->node);
     else if (slab->total_free == slab->total){
         list_remove(&slab->node);
-        page_free(type, slab, 1);
-
         cache->total_free -= slab->total;
+
+        bool res = page_free(type, slab, 1);
+        if(!res){
+            print("free slab fail\n");
+        }
+          
     }
     
 }

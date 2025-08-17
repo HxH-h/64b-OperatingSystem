@@ -2,6 +2,8 @@
 
 # include "../lib/stdtype.h"
 # include "../lib/linkedlist.h"
+# include "memory.h"
+# include "../console/console.h"
 
 # define SLAB_MAGIC 0x4858480426
 # define SLAB_MASK (0xffffffffffe00000)

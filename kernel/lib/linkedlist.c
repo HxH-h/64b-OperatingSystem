@@ -12,7 +12,7 @@ void list_init(LinkedList *list) {
 // 插入指定节点之前
 void insert_before(Node *before , Node *node){
     //intr_status old = get_intr_status();
-    disable_intr();
+    //disable_intr();
 
     node->next = before;
     node->prev = before->prev;
@@ -44,7 +44,7 @@ void list_append(LinkedList *list, Node *node) {
 // 头删
 Node *list_pop(LinkedList *list) {
     //intr_status old = get_intr_status();
-    disable_intr();
+    //disable_intr();
 
     Node *node = list->head.next;
 
