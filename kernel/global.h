@@ -1,5 +1,45 @@
 # pragma once
 
+# include "./lib/stdtype.h"
 
 # define DIV_ROUND_UP(a, b) (((a) + (b) - 1) / (b))
+
+
+// 获取cpuid
+static inline void cpuid(uint32_t leaf, uint32_t subleaf,
+                         uint32_t *eax, uint32_t *ebx,
+                         uint32_t *ecx, uint32_t *edx)
+{
+    uint32_t a, b, c, d;
+    __asm__ volatile("cpuid"
+                     : "=a"(a), "=b"(b), "=c"(c), "=d"(d)
+                     : "a"(leaf), "c"(subleaf)
+                     : "memory");
+    if (eax) *eax = a;
+    if (ebx) *ebx = b;
+    if (ecx) *ecx = c;
+    if (edx) *edx = d;
+}
+
+// 指定端口输出一个字节
+static inline void outb(uint16_t port, uint8_t data){
+    asm volatile ("outb %b0, %w1" : : "a"(data), "Nd"(port));
+}
+
+// 指定端口读取一个字节
+static inline uint8_t inb(uint16_t port){
+    uint8_t data;
+    asm volatile ("inb %w1, %b0" : "=a"(data) : "Nd"(port));
+    return data;
+}
+
+// 从指定地址输出多个字节到指定端口
+static inline void outsw(uint16_t port, const void* addr, uint32_t word_cnt){
+    asm volatile ("cld; rep outsw" : "+S"(addr), "+c"(word_cnt) : "d"(port));
+}
+// 从指定端口读取多个字节到指定内存空间
+static inline void insw(uint16_t port, void* addr, uint32_t word_cnt){
+    asm volatile ("cld; rep insw" : "+D"(addr), "+c"(word_cnt) : "d"(port) : "memory");
+}
+
 
