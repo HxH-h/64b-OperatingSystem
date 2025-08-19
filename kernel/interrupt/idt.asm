@@ -56,7 +56,7 @@ intr%1entry:
     section .data
         dq intr%1entry  ; 存储中断入口地址
 
-    %endmacro
+%endmacro
 
 intr_exit:
     pop r15

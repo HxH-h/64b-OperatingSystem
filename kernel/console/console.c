@@ -43,6 +43,13 @@ void init_console(Appearance appear){
 
 }
 
+void clear_console(){ 
+    uint32_t i = 0;
+    for(; i < WIDTH * HEIGHT; i++) console.screen_buffer[i] = console.bg_color;
+    console.cursor.x = 0;
+    console.cursor.y = 0;
+}
+
 void next_line(){
     console.cursor.x = 0;
     console.cursor.y += FONT_HEIGHT;

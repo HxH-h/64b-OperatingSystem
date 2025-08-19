@@ -23,6 +23,7 @@ typedef enum{
 } Appearance;
 
 void init_console(Appearance appear);
+void clear_console();
 void put_char_color(char ch , uint32_t fg_color);
 void print_color(uint32_t fg_color , const char *format , ...);
 void print(const char *format , ...);
