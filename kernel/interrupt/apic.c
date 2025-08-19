@@ -7,23 +7,18 @@
 # define LAPIC 0x80F
 # define LAPIC_EOI 0x80B
 
+# define LVT_CMCI 0x82F
+# define LVT_TIMER 0x832
+# define LVT_THERMAL 0x833
+# define LVT_PERFORMANCE 0x834
+# define LVT_LINT0 0x835
+# define LVT_LINT1 0x836
+# define LVT_ERROR 0x837
+
 
 # define APIC_ENABLE (1 << 11)
 # define x2APIC_ENABLE (1 << 10)
 #define LAPIC_ENABLE  (1 << 8)
-
-// 读写MSR
-static inline uint64_t rdmsr(uint32_t msr) {
-    uint32_t lo, hi;
-    __asm__ volatile ("rdmsr" : "=a"(lo), "=d"(hi) : "c"(msr));
-    return ((uint64_t)hi << 32) | lo;
-}
-
-static inline void wrmsr(uint32_t msr, uint64_t val) {
-    uint32_t lo = val & 0xFFFFFFFF;
-    uint32_t hi = val >> 32;
-    __asm__ volatile ("wrmsr" : : "c"(msr), "a"(lo), "d"(hi));
-}
 
 
 void init_apic(void) { 
@@ -50,6 +45,16 @@ void init_apic(void) {
     // 禁用8295a
     outb(0x21 , 0xff);
     outb(0xa1 , 0xff);
+
+
+    // 设置LVT
+    wrmsr(LVT_CMCI , 0x10000);
+    wrmsr(LVT_TIMER , 0x10000);
+    wrmsr(LVT_THERMAL , 0x10000);
+    wrmsr(LVT_PERFORMANCE , 0x10000);
+    wrmsr(LVT_LINT0 , 0x10000);
+    wrmsr(LVT_LINT1 , 0x10000);
+    wrmsr(LVT_ERROR , 0x10000);
 
 }
 
