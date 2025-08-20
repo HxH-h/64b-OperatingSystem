@@ -1,6 +1,6 @@
 # include "apic.h"
 
-# include "global.h"
+# include "../global.h"
 # include "../console/console.h"
 
 # define IA32_APIC_BASE 0x1B

@@ -32,6 +32,8 @@ section .text vstart=LOADER_START_ADDRESS
         dq  0x0000920000000000
         dq  0x0020f80000000000
         dq  0x0000f20000000000
+        dq  0x0000890200000067
+        dq  0x00000000FFFF8000
     GDT_64_LIMIT equ ($ - GDT_64_BASE) - 1
     GDT_64_PTR:
         dw GDT_64_LIMIT
