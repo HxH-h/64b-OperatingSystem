@@ -36,6 +36,7 @@ typedef struct __attribute__((packed)) {
     uint16_t iomap_base; 
 } TSS;
 
+
 # define TSS_BASE ((TSS *)0xFFFF800000020000)
 # define TSS_SELECTOR (0x05 << 3)
 
@@ -53,6 +54,9 @@ typedef struct __attribute__((packed)) {
 #define IDT_DPL(n)      (((n) & 0x3) << 5)
 
 #define IDT_IST(n)      ((uint8_t)((n) & 0x7))
+
+# define EFLAGS_IF 0x00000200
+
 
 // 中断服务函数入口
 extern uint64_t intr_entry_addr[IDT_CNT];
@@ -110,7 +114,6 @@ void idt_set_gate(IDT_gate *gate,
 void init_idt(){
     uint16_t i = 0;
     for (; i < IDT_CNT; i++) {
-        print("idt entry %x\n" , intr_entry_addr[i]);
         idt_set_gate(&IDT_BASE[i], intr_entry_addr[i], SELECTOR_CODE, 0, IDT_DPL_KERNEL);
     }
 
@@ -179,6 +182,32 @@ void isr_dispatch(uint8_t vector, uint64_t error_code) {
     if (vector < 256) {
         IRQ_handle_table[vector](vector, error_code);  // 调用注册的处理函数
     }
+}
+
+// 获取中断状态
+static inline intr_status get_intr_status(){
+
+    uint32_t eflags = 0;
+    asm volatile ("pushfl ; popl %0" : "=g"(eflags));
+    return (eflags & EFLAGS_IF) ? INTR_ON : INTR_OFF;
+}
+
+
+// 使能中断
+intr_status enable_intr(){
+    intr_status old_status = get_intr_status();
+
+    if (old_status == INTR_OFF) asm volatile ("sti");
+    return old_status;
+}
+// 关中断
+intr_status disable_intr(){
+    intr_status old_status = get_intr_status();
+
+    // 防止指令重排，确保关中断后的指令不会排到前面
+    if (get_intr_status() == INTR_ON) asm volatile ("cli":::"memory");
+
+    return old_status;
 }
 
 
