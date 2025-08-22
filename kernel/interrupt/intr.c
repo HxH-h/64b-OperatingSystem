@@ -1,6 +1,6 @@
 # include "intr.h"
 # include "apic.h"
-
+# include "../global.h"
 # include "../console/console.h"
 
 typedef struct __attribute__((packed)) {
@@ -41,7 +41,7 @@ typedef struct __attribute__((packed)) {
 # define TSS_SELECTOR (0x05 << 3)
 
 # define IDT_BASE ((IDT_gate *)0xFFFF800000010000)
-# define IDT_CNT  32
+# define IDT_CNT  256
 # define IDT_LIMIT (sizeof(IDT_gate) * IDT_CNT - 1)
 
 # define SELECTOR_CODE (0x01 << 3) 
@@ -57,6 +57,7 @@ typedef struct __attribute__((packed)) {
 
 # define EFLAGS_IF 0x00000200
 
+int temp = 0;
 
 // 中断服务函数入口
 extern uint64_t intr_entry_addr[IDT_CNT];
@@ -91,7 +92,13 @@ void init_tss(){
     TSS_BASE->rsp0 = 0xFFFF800000080000;
     TSS_BASE->iomap_base = sizeof(TSS);
 
-    __asm__ volatile("ltr %w0" : : "r"(TSS_SELECTOR));
+    uint16_t selector = TSS_SELECTOR;
+    
+    // 加载TSS选择子到任务寄存器TR
+    __asm__ __volatile__(	"ltr	%%ax"				\
+				:					\
+				:"a"(selector)				\
+				:"memory");	
 }
 
 void idt_set_gate(IDT_gate *gate,
@@ -136,9 +143,9 @@ void init_idt(){
 void general_IRQ_handler(uint8_t vec_num, uint64_t error_code){
     if (vec_num == 0x27 || vec_num == 0x2F) return;
 
-    clear_console();
+    // clear_console();
 
-    print_color(COLOR_RED, "Unhandled interrupt %d %s !!!\n", vec_num , intr_name[vec_num]);
+    print_color(COLOR_RED, "Unhandled interrupt %d %s error code: 0x%x!!!\n", vec_num , intr_name[vec_num] , error_code);
 
     if(vec_num == 14){
         uint64_t page_fault_vaddr = 0;
@@ -146,7 +153,9 @@ void general_IRQ_handler(uint8_t vec_num, uint64_t error_code){
 
         print_color(COLOR_RED, "Page fault at 0x%x\n", page_fault_vaddr);
     }
-    while(1);
+
+    if(temp++ == 5) while(1);
+    // while(1);
 }
 
 void init_handler(){
@@ -157,10 +166,10 @@ void init_intr(){
 
     // 初始化APIC硬件
     init_apic();
-    print("init apic finish\n");
+    //print("init apic finish\n");
 
     // 初始化TSS
-    init_tss();
+    // init_tss();
 
     // 初始化IDT
     init_idt();
@@ -187,8 +196,8 @@ void isr_dispatch(uint8_t vector, uint64_t error_code) {
 // 获取中断状态
 static inline intr_status get_intr_status(){
 
-    uint32_t eflags = 0;
-    asm volatile ("pushfl ; popl %0" : "=g"(eflags));
+    uint64_t eflags = 0;
+    asm volatile ("pushfq ; popq %0" : "=g"(eflags));
     return (eflags & EFLAGS_IF) ? INTR_ON : INTR_OFF;
 }
 
@@ -198,6 +207,7 @@ intr_status enable_intr(){
     intr_status old_status = get_intr_status();
 
     if (old_status == INTR_OFF) asm volatile ("sti");
+    
     return old_status;
 }
 // 关中断

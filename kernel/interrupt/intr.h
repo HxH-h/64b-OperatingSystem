@@ -8,8 +8,8 @@ typedef enum {
 
 // 中断状态
 typedef enum{
-    INTR_ON,
-    INTR_OFF
+    INTR_OFF,
+    INTR_ON
 } intr_status;
 
 void init_intr();

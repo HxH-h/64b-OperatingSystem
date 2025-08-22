@@ -32,11 +32,14 @@ IRQ_handler 15, NO_CODE
 IRQ_handler 16, NO_CODE
 IRQ_handler 17, ERROR_CODE
 
+; 生成剩余的中断处理函数
 %assign i 18
 %rep 238
-    IRQ_handler i , NO_CODE
+    IRQ_handler i, NO_CODE
 %assign i i+1
 %endrep
+
+
 
 extern isr_dispatch    
 isr_common_handler:
@@ -71,6 +74,11 @@ isr_common_handler:
     mov rsi, [rsp + 19*8 + 8] ; error_code
 
     call isr_dispatch
+
+    mov rcx , 0x80B
+    xor rax , rax
+    xor rdx , rdx
+    wrmsr
 
     ; 恢复寄存器
     pop rax

@@ -43,6 +43,7 @@ section .text vstart=LOADER_START_ADDRESS
     SELECTOR_DATA equ 0x02 << 3 
     SELECTOR_CODE_USER equ 0x03 << 3 | 0x03
     SELECTOR_DATA_USER equ 0x04 << 3 | 0x03
+    
 
 loader_start:
 
@@ -126,7 +127,7 @@ mov esp , KERNEL_STACK
 ; 加载内核
     mov eax , KERNEL_START_SECTOR
     mov ebx , KERNEL_START_ADDRESS
-    mov cx , KERNEL_SECTOR_CNT
+    mov cx , KERNEL_SECTOR_CNT  
 
     mov esi , eax
     ; 设置扇区数
@@ -234,7 +235,6 @@ mov	eax,	cr0
 bts	eax,	0
 bts	eax,	31
 mov	cr0,	eax
-
 
 
 
