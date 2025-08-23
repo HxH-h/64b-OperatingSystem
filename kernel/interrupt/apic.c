@@ -21,6 +21,96 @@
 # define x2APIC_ENABLE (1 << 10)
 #define LAPIC_ENABLE  (1 << 8)
 
+# define IOAPIC_BASE (0xFFFFFF0001000000)
+# define IOREGSEL     ((uint32_t *)(IOAPIC_BASE + 0x00))
+# define IOWIN        ((uint32_t *)(IOAPIC_BASE + 0x10))
+# define IO_EOI       ((uint32_t *)(IOAPIC_BASE + 0x40))
+
+typedef struct {
+    uint8_t vector;         // 中断向量号
+    uint8_t delivery_mode;  // 000=Fixed...
+    uint8_t dest_mode;      // 0=Physical, 1=Logical
+    uint8_t polarity;       // 0=高有效, 1=低有效
+    uint8_t trigger_mode;   // 0=Edge, 1=Level
+    uint8_t mask;           // 0=enable, 1=mask
+    uint8_t reserved_low;   // 保留
+    uint8_t dest_lapic_id;  // 目标 LAPIC ID (0~255)
+} ioapic_rte;
+
+
+static inline void io_mfence(void) {
+    __asm__ volatile("mfence" ::: "memory");
+}
+
+
+// 写 RTE
+void ioapic_write_rte_struct(uint32_t irq, const ioapic_rte *rte) {
+    uint32_t low  = 0, high = 0;
+
+    // 构造低 32 位
+    low |= rte->vector & 0xFF;
+    low |= ((uint32_t)(rte->delivery_mode & 0x7)) << 8;
+    low |= ((uint32_t)(rte->dest_mode & 0x1)) << 11;
+    low |= ((uint32_t)(rte->polarity & 0x1)) << 13;
+    low |= ((uint32_t)(rte->trigger_mode & 0x1)) << 15;
+    low |= ((uint32_t)(rte->mask & 0x1)) << 16;
+
+    // 高 32 位：只关心 bit56-63
+    high = ((uint32_t)(rte->dest_lapic_id & 0xFF)) << 24;
+
+    // 写高字
+    *IOREGSEL = 0x10 + irq * 2 + 1;
+    io_mfence();
+    *IOWIN = high;
+    io_mfence();
+
+    // 写低字
+    *IOREGSEL = 0x10 + irq * 2;
+    io_mfence();
+    *IOWIN = low;
+    io_mfence();
+}
+
+// 读 RTE
+void ioapic_read_rte_struct(unsigned int irq, ioapic_rte *rte) {
+    uint32_t low, high;
+
+    *IOREGSEL = 0x10 + irq * 2 + 1;
+    io_mfence();
+    high = *IOWIN;
+    io_mfence();
+
+    *IOREGSEL = 0x10 + irq * 2;
+    io_mfence();
+    low = *IOWIN;
+    io_mfence();
+
+    rte->vector       = low & 0xFF;
+    rte->delivery_mode = (low >> 8) & 0x7;
+    rte->dest_mode     = (low >> 11) & 0x1;
+    rte->polarity      = (low >> 13) & 0x1;
+    rte->trigger_mode  = (low >> 15) & 0x1;
+    rte->mask          = (low >> 16) & 0x1;
+    rte->dest_lapic_id = (high >> 24) & 0xFF;
+}
+
+void init_ioapic(void) { 
+    ioapic_rte rte;
+    rte.vector = 0x20;
+    rte.delivery_mode = 0;
+    rte.dest_mode = 0;
+    rte.polarity = 0;
+    rte.trigger_mode = 0;
+    rte.mask = 1;
+    rte.dest_lapic_id = 0;
+
+    uint8_t i = 0;
+    for(; i < 24 ; i++ , rte.vector++) ioapic_write_rte_struct(i , &rte);
+
+        
+    
+
+}
 
 void init_apic(void) { 
 
@@ -57,5 +147,19 @@ void init_apic(void) {
     wrmsr(LVT_LINT1 , 0x10000);
     wrmsr(LVT_ERROR , 0x10000);
 
-}
+    init_ioapic();
 
+    // 开启IOAPIC
+    io_out32(0xcf8,0x8000f8f0);
+	uint32_t x = io_in32(0xcfc);
+
+    x = x & 0xffffc000;
+
+    uint32_t *p = ( 0xFFFFFF0001000000 + (x + (uint32_t)0x31fe) & 0x1FFFFF);
+
+    x = (*p & 0xffffff00) | 0x100;
+	io_mfence();
+	*p = x;
+	io_mfence();
+
+}

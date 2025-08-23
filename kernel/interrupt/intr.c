@@ -169,7 +169,7 @@ void init_intr(){
     //print("init apic finish\n");
 
     // 初始化TSS
-    // init_tss();
+    init_tss();
 
     // 初始化IDT
     init_idt();

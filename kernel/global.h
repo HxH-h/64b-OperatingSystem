@@ -46,6 +46,16 @@ static inline uint8_t inb(uint16_t port){
     return data;
 }
 
+static inline void io_out32(uint16_t port, uint32_t val) {
+    __asm__ volatile ("outl %0, %1" :: "a"(val), "Nd"(port));
+}
+
+static inline uint32_t io_in32(uint16_t port) {
+    uint32_t val;
+    __asm__ volatile ("inl %1, %0" : "=a"(val) : "Nd"(port));
+    return val;
+}
+
 // 从指定地址输出多个字节到指定端口
 static inline void outsw(uint16_t port, const void* addr, uint32_t word_cnt){
     asm volatile ("cld; rep outsw" : "+S"(addr), "+c"(word_cnt) : "d"(port));
