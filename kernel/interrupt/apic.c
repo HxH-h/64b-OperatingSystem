@@ -143,6 +143,7 @@ void register_rte(intr_src src , uint8_t vector , uint8_t dest_lapic){
 
 }
 
+
 void init_ioapic(void) { 
     ioapic_rte rte;
     rte.vector = 0x20;
