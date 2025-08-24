@@ -69,3 +69,12 @@ static inline void io_mfence(void) {
     __asm__ volatile("mfence" ::: "memory");
 }
 
+static inline void outl(uint16_t port, uint32_t value) {
+    __asm__ __volatile__("outl %0, %1" : : "a"(value), "Nd"(port));
+}
+
+static inline uint32_t inl(uint16_t port) {
+    uint32_t ret;
+    __asm__ __volatile__("inl %1, %0" : "=a"(ret) : "Nd"(port));
+    return ret;
+}
