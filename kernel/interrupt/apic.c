@@ -156,7 +156,7 @@ void init_ioapic(void) {
     uint8_t i = 0;
     for(; i < 24 ; i++ , rte.vector++) ioapic_write_rte_struct(i , &rte);
 
-     // 开启IOAPIC
+    // 开启IOAPIC
     io_out32(0xcf8,0x8000f8f0);
 	uint32_t x = io_in32(0xcfc);
 
