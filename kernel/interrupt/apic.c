@@ -1,6 +1,7 @@
 # include "apic.h"
 
 # include "../global.h"
+
 # include "../console/console.h"
 
 # define IA32_APIC_BASE 0x1B
@@ -26,6 +27,7 @@
 # define IOWIN        ((uint32_t *)(IOAPIC_BASE + 0x10))
 # define IO_EOI       ((uint32_t *)(IOAPIC_BASE + 0x40))
 
+
 typedef struct {
     uint8_t vector;         // 中断向量号
     uint8_t delivery_mode;  // 000=Fixed...
@@ -38,8 +40,41 @@ typedef struct {
 } ioapic_rte;
 
 
-static inline void io_mfence(void) {
-    __asm__ volatile("mfence" ::: "memory");
+void init_apic(void) { 
+
+    // 检查是否支持APIC
+    uint32_t ecx , edx;
+    cpuid(1, 0, NULL, NULL , &ecx, &edx);
+
+    if (!(edx & (1 << 9))) print("APIC not supported\n");
+    if (!(ecx & (1 << 21))) print("x2APIC not enabled\n");
+
+    // 启用x2APIC
+    uint64_t val = APIC_ENABLE | x2APIC_ENABLE;
+    wrmsr(IA32_APIC_BASE, val);
+
+    // 开启LAPIC
+    val = LAPIC_ENABLE | 0xFF;
+    wrmsr(LAPIC , val);
+
+    wrmsr(LAPIC_TPR , 0);
+
+    wrmsr(LAPIC_EOI , 0);
+
+    // 禁用8295a
+    outb(0x21 , 0xff);
+    outb(0xa1 , 0xff);
+
+
+    // 设置LVT
+    wrmsr(LVT_CMCI , 0x10000);
+    wrmsr(LVT_TIMER , 0x10000);
+    wrmsr(LVT_THERMAL , 0x10000);
+    wrmsr(LVT_PERFORMANCE , 0x10000);
+    wrmsr(LVT_LINT0 , 0x10000);
+    wrmsr(LVT_LINT1 , 0x10000);
+    wrmsr(LVT_ERROR , 0x10000);
+
 }
 
 
@@ -94,6 +129,20 @@ void ioapic_read_rte_struct(unsigned int irq, ioapic_rte *rte) {
     rte->dest_lapic_id = (high >> 24) & 0xFF;
 }
 
+void register_rte(intr_src src , uint8_t vector , uint8_t dest_lapic){
+    ioapic_rte rte;
+    rte.vector = vector;
+    rte.delivery_mode = 0;
+    rte.dest_mode = 0;
+    rte.polarity = 0;
+    rte.trigger_mode = 0;
+    rte.mask = 0;
+    rte.dest_lapic_id = dest_lapic;
+
+    ioapic_write_rte_struct(src , &rte);
+
+}
+
 void init_ioapic(void) { 
     ioapic_rte rte;
     rte.vector = 0x20;
@@ -107,49 +156,7 @@ void init_ioapic(void) {
     uint8_t i = 0;
     for(; i < 24 ; i++ , rte.vector++) ioapic_write_rte_struct(i , &rte);
 
-        
-    
-
-}
-
-void init_apic(void) { 
-
-    // 检查是否支持APIC
-    uint32_t ecx , edx;
-    cpuid(1, 0, NULL, NULL , &ecx, &edx);
-
-    if (!(edx & (1 << 9))) print("APIC not supported\n");
-    if (!(ecx & (1 << 21))) print("x2APIC not enabled\n");
-
-    // 启用x2APIC
-    uint64_t val = APIC_ENABLE | x2APIC_ENABLE;
-    wrmsr(IA32_APIC_BASE, val);
-
-    // 开启LAPIC
-    val = LAPIC_ENABLE | 0xFF;
-    wrmsr(LAPIC , val);
-
-    wrmsr(LAPIC_TPR , 0);
-
-    wrmsr(LAPIC_EOI , 0);
-
-    // 禁用8295a
-    outb(0x21 , 0xff);
-    outb(0xa1 , 0xff);
-
-
-    // 设置LVT
-    wrmsr(LVT_CMCI , 0x10000);
-    wrmsr(LVT_TIMER , 0x10000);
-    wrmsr(LVT_THERMAL , 0x10000);
-    wrmsr(LVT_PERFORMANCE , 0x10000);
-    wrmsr(LVT_LINT0 , 0x10000);
-    wrmsr(LVT_LINT1 , 0x10000);
-    wrmsr(LVT_ERROR , 0x10000);
-
-    init_ioapic();
-
-    // 开启IOAPIC
+     // 开启IOAPIC
     io_out32(0xcf8,0x8000f8f0);
 	uint32_t x = io_in32(0xcfc);
 
@@ -160,6 +167,7 @@ void init_apic(void) {
     x = (*p & 0xffffff00) | 0x100;
 	io_mfence();
 	*p = x;
-	io_mfence();
-
+	io_mfence();  
+    
 }
+

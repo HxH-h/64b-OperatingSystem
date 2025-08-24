@@ -3,7 +3,7 @@
 
 typedef void (*intr_handler)(uint8_t vector, uint64_t error_code);
 typedef enum {
-    TIMER = 0x20
+    TIMER = 0x20 , KEYBOARD
 } INTR_TYPE;
 
 // 中断状态

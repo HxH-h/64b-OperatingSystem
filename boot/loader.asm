@@ -213,7 +213,7 @@ mov esp , KERNEL_STACK
     mov dword   [PAGE_BASE + 0x4000 + 8 * 1] , 0xe0200083
     mov dword   [PAGE_BASE + 0x4000 + 8 * 2] , 0xe0400083
 
-    mov dword   [PAGE_BASE + 8 * 8] , 0xFEC00083
+    mov dword   [PAGE_BASE + 0x4000 + 8 * 8] , 0xFEC00083
 
 ; 重新加载GDT
 lgdt [GDT_64_PTR]

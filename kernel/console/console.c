@@ -4,8 +4,8 @@
 # include <stdarg.h>
 
 typedef struct{
-    uint16_t x;
-    uint16_t y;
+    uint32_t x;
+    uint32_t y;
 } Cursor;
 
 typedef struct{
@@ -66,22 +66,26 @@ void next_cursor(){
 }
 
 void back_cursor(){ 
-    console.cursor.x -= FONT_WIDTH;
-    if(console.cursor.x < 0){
-        if(console.cursor.y < FONT_HEIGHT) return;
-        else{
-            console.cursor.x = WIDTH - FONT_WIDTH;
-            console.cursor.y -= FONT_HEIGHT;
-        }
+   
+    int delete_x = console.cursor.x - FONT_WIDTH;
+    int delete_y = console.cursor.y;
+    
+    if (delete_x < 0) {
+        delete_y = console.cursor.y - FONT_HEIGHT;
+        delete_x = WIDTH - FONT_WIDTH;
+        
+        if (delete_y < 0) return;
     }
+    
     for (int y = 0; y < FONT_HEIGHT; y++) {
         for (int x = 0; x < FONT_WIDTH; x++) {
-            // 计算在帧缓冲区中的位置
-            uint32_t pixel_offset = (console.cursor.y + y) * WIDTH + (console.cursor.x + x);
-            // 背景色
+            uint32_t pixel_offset = (delete_y + y) * WIDTH + (delete_x + x);
             console.screen_buffer[pixel_offset] = console.bg_color;
         }
     }
+    
+    console.cursor.x = delete_x;
+    console.cursor.y = delete_y;  
 }
 
 void put_char_color(char ch , uint32_t fg_color){
@@ -110,6 +114,11 @@ void put_char_color(char ch , uint32_t fg_color){
     // 移动光标
     next_cursor();
 }
+void put_char(char ch){
+    if (ch == '\n') next_line();
+    else if (ch == '\b') back_cursor(); 
+    else put_char_color(ch , console.fg_color);
+}
 
 void print_color(uint32_t fg_color , const char *format , ...){ 
     
@@ -135,11 +144,7 @@ void print(const char *format , ...){
     va_end(args);
 
     uint32_t i = 0;
-    for(i = 0; i < len; i++){
-        if(console.print_buffer[i] == '\n') next_line();
-        else if(console.print_buffer[i] == '\b') back_cursor();
-        else put_char_color(console.print_buffer[i] , console.fg_color);
-    }
+    for(i = 0; i < len; i++) put_char(console.print_buffer[i]);
 }
 
 

@@ -166,7 +166,7 @@ void init_intr(){
 
     // 初始化APIC硬件
     init_apic();
-    //print("init apic finish\n");
+    print("init apic finish\n");
 
     // 初始化TSS
     init_tss();
@@ -178,6 +178,11 @@ void init_intr(){
     // 初始化中断服务函数
     init_handler();
     print("init handler finish\n");
+
+    // 初始化IOAPIC
+    init_ioapic();
+
+    print("init ioapic finish\n"); 
 
 }
 
